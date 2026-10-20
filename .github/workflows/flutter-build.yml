@@ -1423,6 +1423,40 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Set WorkInNet Android server
+        shell: pwsh
+        run: |
+          $file = "libs/hbb_common/src/config.rs"
+          $text = Get-Content $file -Raw
+          $text = $text.Replace('"RustDesk".to_owned()', '"WorkInNet Apoio Remoto".to_owned()')
+          $text = $text.Replace('pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];', 'pub const RENDEZVOUS_SERVERS: &[&str] = &["apoio.workinnet.com:21116"];')
+          $text = $text.Replace('pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";', 'pub const RS_PUB_KEY: &str = "${{ vars.RS_PUB_KEY }}";')
+          $text = $text.Replace('pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();', 'pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("custom-rendezvous-server".to_owned(), "apoio.workinnet.com:21116".to_owned()), ("relay-server".to_owned(), "apoio.workinnet.com:21117".to_owned()), ("key".to_owned(), RS_PUB_KEY.to_owned())]));')
+          Set-Content -Path $file -Value $text -NoNewline
+          $manifestFile = "flutter/android/app/src/main/AndroidManifest.xml"
+          $manifestText = Get-Content $manifestFile -Raw
+          $manifestText = $manifestText.Replace('android:label="RustDesk"', 'android:label="WorkInNet Apoio Remoto"')
+          $manifestText = $manifestText.Replace('android:label="RustDesk Input"', 'android:label="WorkInNet Apoio Remoto Input"')
+          Set-Content -Path $manifestFile -Value $manifestText -NoNewline
+
+      - name: Set WorkInNet Android icon
+        shell: pwsh
+        run: |
+          $folders = @(
+            "mipmap-mdpi",
+            "mipmap-hdpi",
+            "mipmap-xhdpi",
+            "mipmap-xxhdpi",
+            "mipmap-xxxhdpi"
+          )
+          foreach ($folder in $folders) {
+            $path = "flutter/android/app/src/main/res/$folder"
+            Copy-Item "flutter/assets/icon.png" "$path/ic_launcher.png" -Force
+            Copy-Item "flutter/assets/icon.png" "$path/ic_launcher_round.png" -Force
+            Copy-Item "flutter/assets/icon.png" "$path/ic_launcher_foreground.png" -Force
+          }
+          
+
       - name: Install flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
