@@ -95,6 +95,7 @@ jobs:
         run: python res/update/generate_update_metadata.py check-key
 
   generate-sbom:
+    if: false
     needs: [validate-update-metadata-keys]
     runs-on: ubuntu-latest
 
@@ -138,10 +139,6 @@ jobs:
               target: windows-2022,
               platform: x64,
             }
-          - {
-              target: windows-11-arm,
-              platform: ARM64,
-            }
     with:
       upload-artifact: ${{ inputs.upload-artifact }}
       target: ${{ matrix.job.target }}
@@ -166,16 +163,6 @@ jobs:
               flutter-arch: x64,
               vcpkg-triplet: x64-windows-static,
               build-args: "--vram",
-            }
-          - {
-              target: aarch64-pc-windows-msvc,
-              os: windows-11-arm,
-              arch: aarch64,
-              flutter-arch: arm64,
-              vcpkg-triplet: arm64-windows-static,
-              # vram is x86/x64-only (NVENC needs CUDA, Intel MediaSDK needs __rdtsc);
-              # no NV/Intel/AMD hardware exists on Windows-on-ARM, so vram stays disabled here.
-              build-args: "",
             }
     steps:
       - name: Export GitHub Actions cache environment variables
@@ -599,6 +586,21 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Set WorkInNet 32-bit application and server
+        shell: pwsh
+        run: |
+          $file = "libs/hbb_common/src/config.rs"
+          $text = Get-Content $file -Raw
+          $text = $text.Replace('"RustDesk".to_owned()', '"WorkInNet Apoio Remoto".to_owned()')
+          $text = $text.Replace('pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];', 'pub const RENDEZVOUS_SERVERS: &[&str] = &["apoio.workinnet.com:21116"];')
+          $text = $text.Replace('pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";', 'pub const RS_PUB_KEY: &str = "${{ vars.RS_PUB_KEY }}";')
+          $text = $text.Replace('pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();', 'pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("custom-rendezvous-server".to_owned(), "apoio.workinnet.com:21116".to_owned()), ("relay-server".to_owned(), "apoio.workinnet.com:21117".to_owned()), ("key".to_owned(), RS_PUB_KEY.to_owned())]));')
+          Set-Content -Path $file -Value $text -NoNewline
+          $ptFile = "src/lang/pt_PT.rs"
+          $ptText = Get-Content $ptFile -Raw
+          $ptText = $ptText -replace '\("Your Desktop",\s*"[^"]*"\)', '("Your Desktop", "Apoio Remoto")'
+          Set-Content -Path $ptFile -Value $ptText -NoNewline
+
       - name: Install LLVM and Clang
         uses: rustdesk-org/install-llvm-action-32bit@6aa7d9ad3df84dff01cd4596dd0fc880a7f47fce # no release tag; commit 2026-05-26
         with:
@@ -749,7 +751,7 @@ jobs:
             ./SignOutput/rustdesk-*.exe
 
   build-rustdesk-ios:
-    if: ${{ inputs.upload-artifact }}
+    if: false
     name: build rustdesk ios ipa
     runs-on: ${{ matrix.job.os }}
     needs: [generate-bridge]
@@ -871,6 +873,7 @@ jobs:
 
 
   build-for-macOS:
+    if: false
     name: ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     needs: [generate-bridge]
@@ -1849,6 +1852,7 @@ jobs:
             signed-apk/rustdesk-${{ env.VERSION }}-universal${{ env.suffix }}.apk
 
   build-rustdesk-linux:
+    if: false
     needs: [generate-bridge]
     name: build rustdesk linux ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.on }}
@@ -2198,6 +2202,7 @@ jobs:
   # old for it. A separate job rather than a matrix entry of build-rustdesk-linux: appimage and
   # flatpak need that job, and a failure here must not skip them.
   build-rustdesk-linux-drm:
+    if: false
     needs: [generate-bridge]
     name: build rustdesk linux drm x86_64
     runs-on: ubuntu-22.04
@@ -2517,7 +2522,7 @@ jobs:
           path: ${{ env.DRM_DEB }}
 
   build-rustdesk-linux-sciter:
-    if: ${{ inputs.upload-artifact }}
+    if: false
     needs: [validate-update-metadata-keys]
     runs-on: ${{ matrix.job.on }}
     name: build-rustdesk-linux-sciter ${{ matrix.job.target }}
@@ -2763,7 +2768,7 @@ jobs:
     name: Build appimage ${{ matrix.job.target }}
     needs: [build-rustdesk-linux]
     runs-on: ubuntu-22.04
-    if: ${{ inputs.upload-artifact }}
+    if: false
     strategy:
       fail-fast: false
       matrix:
@@ -2818,7 +2823,7 @@ jobs:
       - build-rustdesk-linux
       - build-rustdesk-linux-sciter
     runs-on: ${{ matrix.job.on }}
-    if: ${{ inputs.upload-artifact }}
+    if: false
     strategy:
       fail-fast: false
       matrix:
