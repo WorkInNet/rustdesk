@@ -1733,6 +1733,31 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Set WorkInNet Android name and icon
+        shell: pwsh
+        run: |
+          $manifestFile = "flutter/android/app/src/main/AndroidManifest.xml"
+          $manifestText = Get-Content $manifestFile -Raw
+          $manifestText = $manifestText.Replace('android:label="RustDesk"', 'android:label="WorkInNet Apoio Remoto"')
+          $manifestText = $manifestText.Replace('android:label="RustDesk Input"', 'android:label="WorkInNet Apoio Remoto Input"')
+          Set-Content -Path $manifestFile -Value $manifestText -NoNewline
+
+          $folders = @(
+            "mipmap-mdpi",
+            "mipmap-hdpi",
+            "mipmap-xhdpi",
+            "mipmap-xxhdpi",
+            "mipmap-xxxhdpi"
+          )
+
+          foreach ($folder in $folders) {
+            $path = "flutter/android/app/src/main/res/$folder"
+            Copy-Item "flutter/assets/icon.png" "$path/ic_launcher.png" -Force
+            Copy-Item "flutter/assets/icon.png" "$path/ic_launcher_round.png" -Force
+            Copy-Item "flutter/assets/icon.png" "$path/ic_launcher_foreground.png" -Force
+          }
+           
+
       - name: Install flutter
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
