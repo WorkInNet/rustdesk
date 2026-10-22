@@ -598,11 +598,14 @@ jobs:
         run: |
           $file = "libs/hbb_common/src/config.rs"
           $text = Get-Content $file -Raw
-          $text = $text.Replace('"RustDesk".to_owned()', '"WorkInNet Apoio Remoto".to_owned()')
           $text = $text.Replace('pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];', 'pub const RENDEZVOUS_SERVERS: &[&str] = &["apoio.workinnet.com:21116"];')
           $text = $text.Replace('pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";', 'pub const RS_PUB_KEY: &str = "${{ vars.RS_PUB_KEY }}";')
           $text = $text.Replace('pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = Default::default();', 'pub static ref DEFAULT_SETTINGS: RwLock<HashMap<String, String>> = RwLock::new(HashMap::from([("custom-rendezvous-server".to_owned(), "apoio.workinnet.com:21116".to_owned()), ("relay-server".to_owned(), "apoio.workinnet.com:21117".to_owned()), ("key".to_owned(), RS_PUB_KEY.to_owned())]));')
           Set-Content -Path $file -Value $text -NoNewline
+          $uiFile = "src/ui.rs"
+          $uiText = Get-Content $uiFile -Raw
+          $uiText = $uiText -replace '(?s)(fn get_app_name\(&self\) -> String \{\s*)get_app_name\(\)(\s*\})', '$1"WorkInNet Apoio Remoto".to_owned()$2'
+          Set-Content -Path $uiFile -Value $uiText -NoNewline
           $ptFile = "src/lang/pt_PT.rs"
           $ptText = Get-Content $ptFile -Raw
           $ptText = $ptText -replace '\("Your Desktop",\s*"[^"]*"\)', '("Your Desktop", "Apoio Remoto")'
